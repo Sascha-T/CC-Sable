@@ -47,6 +47,7 @@ public class Physicker {
         REQUESTS.put(id, new Request(sublevel, receiver, tick+1));
         sublevel.enableIndividualQueuedForcesTracking(true);
         Object retVal = receiver.poll(100, TimeUnit.MILLISECONDS);
+        if(retVal == null) System.out.println("Actual timeout");
         sublevel.enableIndividualQueuedForcesTracking(false);
         return retVal;
     }
