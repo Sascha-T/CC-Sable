@@ -26,6 +26,7 @@ public class Physicker {
     private static long tick = 0;
 
     public static void onPostPhysicsTick(SubLevelPhysicsSystem activeSystem, double v) {
+        long og = System.currentTimeMillis();
         for (Map.Entry<Integer, Request> entry : REQUESTS.entrySet()) {
             if(!entry.getValue().subLevel().getLevel().equals(activeSystem.getLevel()) && tick >= entry.getValue().tick())
                 continue;
@@ -33,6 +34,7 @@ public class Physicker {
             REQUESTS.remove(entry.getKey());
             try {
                 entry.getValue().receiver.put(createValueMap(entry.getValue().subLevel));
+                System.out.println(System.currentTimeMillis() - og);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -44,10 +46,9 @@ public class Physicker {
     public static Object requestForces(IComputerSystem system, ServerSubLevel sublevel) throws InterruptedException {
         int id = system.getID();
         BlockingQueue<Object> receiver = new ArrayBlockingQueue<>(1);
-        REQUESTS.put(id, new Request(sublevel, receiver, tick+1));
+        REQUESTS.put(id, new Request(sublevel, receiver, tick+2));
         sublevel.enableIndividualQueuedForcesTracking(true);
         Object retVal = receiver.poll(100, TimeUnit.MILLISECONDS);
-        if(retVal == null) System.out.println("Actual timeout");
         sublevel.enableIndividualQueuedForcesTracking(false);
         return retVal;
     }
