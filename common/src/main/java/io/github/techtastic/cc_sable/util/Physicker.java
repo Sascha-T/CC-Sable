@@ -23,10 +23,11 @@ import java.util.concurrent.*;
  */
 public class Physicker {
     private static ConcurrentMap<Integer, Request> REQUESTS = new ConcurrentHashMap<>();
+    private static long tick = 0;
 
     public static void onPostPhysicsTick(SubLevelPhysicsSystem activeSystem, double v) {
         for (Map.Entry<Integer, Request> entry : REQUESTS.entrySet()) {
-            if(!entry.getValue().subLevel().getLevel().equals(activeSystem.getLevel()))
+            if(!entry.getValue().subLevel().getLevel().equals(activeSystem.getLevel()) && tick >= entry.getValue().tick())
                 continue;
 
             REQUESTS.remove(entry.getKey());
@@ -36,20 +37,21 @@ public class Physicker {
                 e.printStackTrace();
             }
         }
+        tick++;
     }
 
 
     public static Object requestForces(IComputerSystem system, ServerSubLevel sublevel) throws InterruptedException {
         int id = system.getID();
         BlockingQueue<Object> receiver = new ArrayBlockingQueue<>(1);
-        REQUESTS.put(id, new Request(sublevel, receiver));
+        REQUESTS.put(id, new Request(sublevel, receiver, tick+1));
         sublevel.enableIndividualQueuedForcesTracking(true);
         Object retVal = receiver.poll(100, TimeUnit.MILLISECONDS);
         sublevel.enableIndividualQueuedForcesTracking(false);
         return retVal;
     }
 
-    private record Request(ServerSubLevel subLevel, BlockingQueue<Object> receiver) { }
+    private record Request(ServerSubLevel subLevel, BlockingQueue<Object> receiver, long tick) { }
 
     private static Map<String, Map<Integer, Map<String, Object>>> createValueMap(ServerSubLevel level) {
         Map<String, Map<Integer, Map<String, Object>>> returnValue = new HashMap<>();
